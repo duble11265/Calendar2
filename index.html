@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>수행평가 관리</title>
+  <meta name="viewport" content="width=900, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #0059b2;
+      --primary-border: #0059b2;
+      --bg: #f7f9fc;
+      --fg: #23262b;
+      --card: #fff;
+      --shadow: rgba(0,0,0,0.07);
+      --accent: #f0f3f7;
+      --calendar-width: 660px;
+      --calendar-cell-height: 70px;
+      --calendar-cell-width: 84px;
+      --calendar-cell-gap: 8px;
+      --font-size-base: 18px;
+      --weekend-fg: #d13a3a;
+      --saturday-fg: #3a55d1;
+      --dot-size: 11px;
+      --dot-color: #1976d2;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+      background: var(--bg); color: var(--fg);
+      min-height: 100vh;
+      font-size: var(--font-size-base);
+      box-sizing: border-box;
+    }
+    .dark {
+      --bg: #17181b;
+      --fg: #e7eafd;
+      --card: #23262b;
+      --accent: #23262b;
+      --shadow: rgba(0,0,0,0.22);
+      --weekend-fg: #ff6e6e;
+      --saturday-fg: #7faaff;
+      --primary-border: #7faaff;
+      --dot-color: #7faaff;
+    }
+    .top-bar {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      position: relative;
+      height: 64px;
+      box-sizing: border-box;
+    }
+    .center-title {
+      flex: 1 0 auto;
+      text-align: center;
+      font-size: 1.65em;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      margin: 0;
+      transition: color 0.2s;
+      border: none;
+      background: none;
+      outline: none;
+      position: absolute;
+      left: 0; right: 0;
+      margin-left: auto;
+      margin-right: auto;
+      width: 400px;
+      pointer-events: none;
+    }
+    .settings-area {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      z-index: 1;
+    }
+    .setting-btn {
+      background: none;
+      color: var(--primary);
+      border: none;
+      font-size: 2em;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 8px;
+      transition: color 0.2s;
+      margin-left: 12px;
+      margin-right: 0;
+    }
+    .setting-btn:hover { color: #003266; }
+    .main-flex {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: 36px;
+      width: 100%;
+    }
+    .calendar-container {
+      width: var(--calendar-width);
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 3px 16px var(--shadow);
+      padding: 18px 12px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 410px;
+    }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 13px;
+    }
+    .calendar-header button {
+      background: none; border: none; font-size: 1.6em; cursor: pointer; color: var(--primary);
+      padding: 4px 12px; border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .calendar-header button:hover { background: #e0ebff; }
+    .calendar-header span {
+      font-size: 1.13em; font-weight: 700; letter-spacing: 0.01em;
+    }
+    .calendar-outer {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+    }
+    .calendar-grid {
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(7, var(--calendar-cell-width));
+      grid-template-rows: repeat(7, var(--calendar-cell-height));
+      gap: var(--calendar-cell-gap);
+      background: none;
+      margin-bottom: 18px;
+      box-sizing: border-box;
+      justify-content: center;
+      align-content: center;
+    }
+    .calendar-grid .day {
+      text-align: center;
+      padding: 0;
+      font-weight: 700;
+      background: none;
+      font-size: 1.05em;
+      align-self: center;
+      justify-self: center;
+      line-height: 1.3;
+      height: var(--calendar-cell-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .calendar-grid .day.sat {
+      color: var(--saturday-fg);
+    }
+    .calendar-grid .day.sun {
+      color: var(--weekend-fg);
+    }
+    .calendar-grid .date {
+      background: var(--accent);
+      border-radius: 11px;
+      cursor: pointer;
+      font-size: 1.01em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-width: var(--calendar-cell-width);
+      min-height: var(--calendar-cell-height);
+      max-width: var(--calendar-cell-width);
+      max-height: var(--calendar-cell-height);
+      transition: border 0.18s, color 0.14s, background 0.14s;
+      border: 2px solid transparent;
+      box-sizing: border-box;
+      overflow: hidden;
+      padding: 7px 8px 0 10px;
+      font-weight: 500;
+      word-break: break-all;
+      position: relative;
+    }
+    .calendar-grid .date.today {
+      border: 2px solid var(--primary-border);
+    }
+    .calendar-grid .date.selected {
+      border: 3.5px solid var(--primary-border);
+    }
+    .calendar-grid .date.has-eval {
+      /* no background */
+    }
+    .calendar-grid .date.inactive {
+      opacity: 0.26; pointer-events: none;
+      color: #aaa;
+    }
+    .calendar-grid .date.sat {
+      color: var(--saturday-fg);
+    }
+    .calendar-grid .date.sun {
+      color: var(--weekend-fg);
+    }
+    .calendar-grid .date.has-eval.sat {
+      color: #3a55d1;
+    }
+    .calendar-grid .date.has-eval.sun {
+      color: #d13a3a;
+    }
+    .date-num-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: center;
+      gap: 4px;
+      position: relative;
+    }
+    .date-dot {
+      width: var(--dot-size);
+      height: var(--dot-size);
+      background: var(--dot-color);
+      border-radius: 50%;
+      display: inline-block;
+      margin-left: 3px;
+      margin-bottom: 1px;
+      vertical-align: middle;
+    }
+    .date-num {
+      font-size: 1.09em;
+      font-weight: 700;
+      margin-bottom: 1px;
+      display: inline-block;
+    }
+    .eval-title {
+      font-size: 0.97em;
+      margin-top: 4px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(var(--calendar-cell-width) - 14px);
+      line-height: 1.25em;
+      color: #1976d2;
+      min-height: 1.4em;
+    }
+    /* 일정 패널 */
+    .day-panel {
+      width: 280px;
+      min-height: 120px;
+      background: var(--card);
+      border-radius: 13px;
+      box-shadow: 0 2px 10px var(--shadow);
+      padding: 20px 18px 18px 18px;
+      margin-top: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      align-items: flex-start;
+      position: sticky;
+      top: 30px;
+    }
+    .day-panel-title {
+      font-size: 1.12em;
+      font-weight: 800;
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+      color: var(--primary);
+    }
+    .day-eval-title {
+      font-weight: 700;
+      color: #1976d2;
+      margin-right: 0.2em;
+      font-size: 1.04em;
+    }
+    .day-eval-dday {
+      font-size: 0.92em;
+      color: #c25b00;
+      font-weight: 700;
+      margin-left: 0.6em;
+    }
+    .day-eval-range {
+      font-size: 0.97em;
+      color: #666;
+      margin-left: 0.4em;
+    }
+    .day-eval-desc {
+      font-size: 0.98em;
+      color: #222;
+      margin-top: 3px;
+      margin-bottom: 8px;
+      white-space: pre-line;
+    }
+    .day-none {
+      color: #aaa; font-size: 1.06em; margin-top: 10px;
+    }
+    /* 수행평가 추가 패널 */
+    .add-btn-bar {
+      width: 280px;
+      margin: 30px 0 0 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .add-eval-btn-main {
+      background: var(--primary);
+      color: #fff;
+      font-size: 1.16em;
+      font-weight: 700;
+      border: none;
+      border-radius: 9px;
+      padding: 13px 22px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: background 0.2s;
+    }
+    .add-eval-btn-main:disabled {
+      background: #b3c8e8; color: #fff; cursor: not-allowed;
+    }
+    .add-eval-btn-main:hover:enabled { background: #003266; }
+    .add-panel-modal {
+      display: none;
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.32);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .add-panel-modal-inner {
+      background: var(--card);
+      border-radius: 13px;
+      box-shadow: 0 2px 10px var(--shadow);
+      padding: 28px 24px 20px 24px;
+      min-width: 320px;
+      max-width: 98vw;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+      animation: popup 0.18s;
+    }
+    .add-panel-modal-title {
+      font-size: 1.13em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--primary);
+    }
+    .add-panel-modal input, .add-panel-modal textarea {
+      width: 100%; font-size: 1em; padding: 7px 10px; margin-bottom: 8px;
+      border-radius: 6px; border: 1px solid #bbb; background: var(--accent); color: var(--fg);
+      box-sizing: border-box;
+    }
+    .add-panel-modal input[readonly] {
+      background: #eee; color: #888; border: 1.5px solid #ddd;
+      cursor: not-allowed;
+    }
+    .add-panel-modal textarea { min-height: 56px; max-height: 110px; resize: vertical; }
+    .add-panel-modal-btns {
+      display: flex; gap: 8px; width: 100%; margin-top: 6px;
+    }
+    .add-panel-modal-btns button {
+      flex: 1;
+      padding: 8px 0; border-radius: 7px; font-size: 1em; font-weight: 600; border: none; cursor: pointer;
+      background: var(--primary); color: #fff;
+      transition: background 0.2s;
+    }
+    .add-panel-modal-btns .cancel { background: #bbb; color: #222; }
+    .add-panel-modal-btns button:hover { filter: brightness(0.92); }
+    @media (max-width: 1200px) {
+      .main-flex { flex-direction: column; align-items: center; gap: 18px;}
+      .day-panel, .add-btn-bar { position: static; width: 98vw; max-width: 410px; margin-left: 0;}
+      .calendar-container { min-width: unset; }
+    }
+    @media (max-width: 900px) {
+      :root {
+        --calendar-width: 96vw;
+        --calendar-cell-width: 12vw;
+      }
+      .calendar-container { padding: 6px 1vw 10px 1vw;}
+      .calendar-outer { min-width: 0; }
+      .calendar-grid { min-width: 0; }
+      .center-title { width: 60vw; }
+    }
+    @media (max-width: 600px) {
+      :root { --font-size-base: 16px; --calendar-cell-width: 13vw; }
+      .calendar-container { padding: 0 1vw 10px 1vw;}
+      .center-title { width: 90vw; }
+      .add-btn-bar { width: 98vw; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1 class="center-title" id="mainTitle"></h1>
+    <div class="settings-area">
+      <button class="setting-btn" onclick="openSettingModal()" aria-label="설정">⚙️</button>
+    </div>
+  </div>
+  <div class="main-flex">
+    <div class="calendar-container">
+      <div class="calendar-header">
+        <button id="prevMonthBtn" aria-label="이전달">&lt;</button>
+        <span id="currentMonth"></span>
+        <button id="nextMonthBtn" aria-label="다음달">&gt;</button>
+      </div>
+      <div class="calendar-outer">
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+    </div>
+    <div>
+      <div class="day-panel" id="dayPanel">
+        <div class="day-panel-title" id="dayPanelTitle">날짜를 선택하세요</div>
+        <div class="day-none" id="dayNone">해당 날짜의 수행평가가 없습니다.</div>
+        <div id="dayList"></div>
+      </div>
+      <div class="add-btn-bar">
+        <button class="add-eval-btn-main" id="openAddEvalBtn" type="button" onclick="openAddEvalModal()">+ 수행평가 추가</button>
+      </div>
+    </div>
+  </div>
+  <!-- 수행평가 추가 모달 -->
+  <div class="add-panel-modal" id="addPanelModalBg">
+    <form class="add-panel-modal-inner" id="addPanelModalForm" autocomplete="off">
+      <div class="add-panel-modal-title">수행평가 추가</div>
+      <label>날짜</label>
+      <input type="text" id="modalEvalDate" readonly required>
+      <label>제목</label>
+      <input type="text" id="modalEvalTitle" maxlength="18" required>
+      <label>범위 (예: 12~15)</label>
+      <input type="text" id="modalEvalRange" pattern="^[0-9]{1,3}\s*~\s*[0-9]{1,3}$" required>
+      <label>상세 내용</label>
+      <textarea id="modalEvalDesc" maxlength="120" required></textarea>
+      <div class="add-panel-modal-btns">
+        <button type="submit">저장</button>
+        <button type="button" class="cancel" onclick="closeAddEvalModal()">취소</button>
+      </div>
+    </form>
+  </div>
+  <!-- 평가 상세 모달 -->
+  <div class="modal-bg" id="detailModalBg" style="display:none;">
+    <div class="modal" id="detailModalContent"></div>
+  </div>
+  <!-- 설정 모달 -->
+  <div class="modal-bg" id="settingModalBg" style="display:none;">
+    <div class="modal setting-modal">
+      <label>다크모드
+        <span class="toggle-switch">
+          <input type="checkbox" id="darkModeSwitch" onchange="toggleDarkMode(this)">
+          <span class="slider"></span>
+          <span class="switch-bg"></span>
+        </span>
+      </label>
+      <br><br>
+      <label for="editTitleInput">페이지 제목</label>
+      <input type="text" id="editTitleInput" maxlength="32" style="font-size:1.04em;padding:7px 10px;border-radius:6px;border:1px solid #bbb;width:100%;margin-bottom:8px;">
+      <div class="modal-btns" style="margin-top:18px;">
+        <button type="button" onclick="saveCustomTitle()">저장</button>
+        <button type="button" class="cancel" onclick="closeSettingModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // 토, 월, 화, 수, 목, 금, 일 순
+    const WEEK_DAYS = ['토','월','화','수','목','금','일'];
+    let evals = JSON.parse(localStorage.getItem('evals')||'[]');
+    let currentDate = new Date();
+    let currentMonth = currentDate.getMonth();
+    let currentYear = currentDate.getFullYear();
+    let selectedDateStr = '';
+    let defaultTitle = '수행평가 관리';
+
+    function getCustomTitle() {
+      return localStorage.getItem('customTitle') || defaultTitle;
+    }
+    function setTitleBar() {
+      document.getElementById('mainTitle').textContent = getCustomTitle();
+    }
+    setTitleBar();
+
+    function saveCustomTitle() {
+      const val = document.getElementById('editTitleInput').value.trim();
+      if(val.length > 0) {
+        localStorage.setItem('customTitle', val);
+      } else {
+        localStorage.removeItem('customTitle');
+      }
+      setTitleBar();
+      closeSettingModal();
+    }
+
+    function saveEvals() {
+      localStorage.setItem('evals', JSON.stringify(evals));
+    }
+    function getEvalsForDate(yyyy, mm, dd) {
+      return evals.filter(e =>
+        e.date === `${yyyy}-${String(mm+1).padStart(2,'0')}-${String(dd).padStart(2,'0')}`);
+    }
+    function renderCalendar(year, month) {
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+      // 요일 헤더 토(0), 월(1), ... 일(6)
+      for(let i=0; i<7; i++) {
+        const d = document.createElement('div');
+        d.className = 'day';
+        if(i === 0) d.classList.add('sat');
+        if(i === 6) d.classList.add('sun');
+        d.textContent = WEEK_DAYS[i];
+        grid.appendChild(d);
+      }
+      // 0:일~6:토 → 토(0)~일(6)로 변환: (getDay() + 6) % 7 + 1, 7->0
+      const firstDay = new Date(year, month, 1);
+      let weekStartIdx = (firstDay.getDay() + 6) % 7 + 1;
+      if(weekStartIdx === 7) weekStartIdx = 0;
+      const lastDate = new Date(year, month+1, 0).getDate();
+      let prevMonthLastDate = new Date(year, month, 0).getDate();
+      for(let i=0; i<weekStartIdx; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'date inactive';
+        empty.textContent = prevMonthLastDate - weekStartIdx + i + 1;
+        grid.appendChild(empty);
+      }
+      for(let date=1; date<=lastDate; date++) {
+        const cell = document.createElement('div');
+        cell.className = 'date';
+        const cellIdx = (weekStartIdx + date - 1) % 7;
+        if (cellIdx === 0) cell.classList.add('sat');
+        if (cellIdx === 6) cell.classList.add('sun');
+        const today = new Date();
+        if (year===today.getFullYear() && month===today.getMonth() && date===today.getDate())
+          cell.classList.add('today');
+        let dayEvals = getEvalsForDate(year,month,date);
+        // 날짜 숫자와 dot
+        const numRow = document.createElement('div');
+        numRow.className = 'date-num-row';
+        const numSpan = document.createElement('span');
+        numSpan.className = 'date-num';
+        numSpan.textContent = date;
+        numRow.appendChild(numSpan);
+        if(dayEvals.length) {
+          cell.classList.add('has-eval');
+          const dot = document.createElement('span');
+          dot.className = 'date-dot';
+          numRow.appendChild(dot);
+        }
+        cell.appendChild(numRow);
+        // 제목(있으면)
+        if(dayEvals.length) {
+          const title = document.createElement('span');
+          title.className = 'eval-title';
+          title.textContent = dayEvals[0].title;
+          cell.appendChild(title);
+        } else {
+          // 높이 맞춤용 빈칸
+          const filler = document.createElement('span');
+          filler.className = 'eval-title';
+          filler.innerHTML = '&nbsp;';
+          cell.appendChild(filler);
+        }
+        cell.onclick = () => {
+          selectedDateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+          highlightDate(selectedDateStr);
+          renderDayPanel();
+        };
+        cell.dataset.datestr = `${year}-${String(month+1).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+        if(dayEvals.length) {
+          cell.ondblclick = ()=>{ openDetailModal(dayEvals[0]); };
+        }
+        grid.appendChild(cell);
+      }
+      let totalDayCnt = weekStartIdx + lastDate;
+      for(let i=0; i<42-totalDayCnt; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'date inactive';
+        empty.textContent = i+1;
+        grid.appendChild(empty);
+      }
+      highlightDate(selectedDateStr);
+    }
+    function highlightDate(datestr) {
+      document.querySelectorAll('.calendar-grid .date').forEach(el=>{
+        el.classList.remove('selected');
+      });
+      if(!datestr) return;
+      const el = document.querySelector(`.calendar-grid .date[data-datestr="${datestr}"]`);
+      if(el) el.classList.add('selected');
+    }
+    function updateMonthText() {
+      const ym = `${currentYear}년 ${currentMonth+1}월`;
+      document.getElementById('currentMonth').textContent = ym;
+    }
+    document.getElementById('prevMonthBtn').onclick = () => {
+      if(currentMonth===0) { currentMonth=11; currentYear--; } else currentMonth--;
+      updateMonthText(); renderCalendar(currentYear, currentMonth); renderDayPanel();
+    }
+    document.getElementById('nextMonthBtn').onclick = () => {
+      if(currentMonth===11) { currentMonth=0; currentYear++; } else currentMonth++;
+      updateMonthText(); renderCalendar(currentYear, currentMonth); renderDayPanel();
+    };
+
+    // 일정 패널 (클릭한 날짜)
+    function renderDayPanel() {
+      const dayPanelTitle = document.getElementById('dayPanelTitle');
+      const dayNone = document.getElementById('dayNone');
+      const dayList = document.getElementById('dayList');
+      dayList.innerHTML = '';
+      if(!selectedDateStr) {
+        dayPanelTitle.textContent = '날짜를 선택하세요';
+        dayNone.style.display = '';
+        return;
+      }
+      const [y, m, d] = selectedDateStr.split('-');
+      dayPanelTitle.textContent = `${y}년 ${parseInt(m)}월 ${parseInt(d)}일 일정`;
+      const dayEvals = evals.filter(ev => ev.date === selectedDateStr);
+      if(!dayEvals.length) {
+        dayNone.style.display = '';
+        return;
+      }
+      dayNone.style.display = 'none';
+      dayEvals.forEach(ev=>{
+        const row = document.createElement('div');
+        row.style.marginBottom = '13px';
+        row.innerHTML = `
+          <span class="day-eval-title">${ev.title}</span>
+          <span class="day-eval-dday">${getDdayText(ev.date)}</span>
+          <span class="day-eval-range">${formatRange(ev.range)}</span>
+          <div class="day-eval-desc">${ev.desc.replace(/\n/g,'<br>')}</div>
+        `;
+        dayList.appendChild(row);
+      });
+    }
+
+    // 수행평가 추가 모달
+    function openAddEvalModal() {
+      document.getElementById('addPanelModalBg').style.display = "flex";
+      document.body.style.overflow = "hidden";
+      document.getElementById('addPanelModalForm').reset();
+      document.getElementById('modalEvalDate').value = selectedDateStr || '';
+      document.getElementById('modalEvalTitle').focus();
+    }
+    function closeAddEvalModal() {
+      document.getElementById('addPanelModalBg').style.display = "none";
+      document.body.style.overflow = "";
+    }
+    document.getElementById('addPanelModalBg').onclick = function(e) {
+      if(e.target === this) closeAddEvalModal();
+    };
+    document.getElementById('addPanelModalForm').onsubmit = function(e) {
+      e.preventDefault();
+      const date = document.getElementById('modalEvalDate').value;
+      const title = document.getElementById('modalEvalTitle').value.trim();
+      const range = document.getElementById('modalEvalRange').value.trim();
+      const desc = document.getElementById('modalEvalDesc').value.trim();
+      if(!date) { alert('날짜를 선택하세요!'); return; }
+      const idx = evals.findIndex(ev=>ev.date===date);
+      const evalObj = {date, title, range, desc};
+      if(idx!==-1) evals[idx]=evalObj;
+      else evals.push(evalObj);
+      saveEvals();
+      closeAddEvalModal();
+      renderCalendar(currentYear, currentMonth);
+      renderDayPanel();
+    };
+
+    // 상세 모달
+    function openDetailModal(ev) {
+      const modal = document.getElementById('detailModalContent');
+      modal.innerHTML = `
+        <div class="detail-title">${ev.title}</div>
+        <div class="detail-dday">${getDdayText(ev.date)}</div>
+        <div class="detail-range">범위: ${formatRange(ev.range)}</div>
+        <div class="detail-desc">${ev.desc.replace(/\n/g,'<br>')}</div>
+        <div class="modal-btns" style="margin-top:20px;">
+          <button type="button" onclick="editEval('${ev.date}')">수정</button>
+          <button type="button" class="cancel" onclick="deleteEval('${ev.date}')">삭제</button>
+          <button type="button" class="cancel" onclick="closeDetailModal()">닫기</button>
+        </div>
+      `;
+      document.getElementById('detailModalBg').style.display = '';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDetailModal() {
+      document.getElementById('detailModalBg').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+    document.getElementById('detailModalBg').onclick = function(e) {
+      if(e.target === this) closeDetailModal();
+    };
+    function editEval(date) {
+      const ev = evals.find(e=>e.date===date);
+      selectedDateStr = date;
+      renderDayPanel();
+      // 수행평가 추가 모달로 값 채우기
+      openAddEvalModal();
+      document.getElementById('modalEvalDate').value = ev.date;
+      document.getElementById('modalEvalTitle').value = ev.title;
+      document.getElementById('modalEvalRange').value = ev.range;
+      document.getElementById('modalEvalDesc').value = ev.desc;
+      closeDetailModal();
+    }
+    function deleteEval(date) {
+      if(confirm('정말 삭제하시겠습니까?')) {
+        evals = evals.filter(e=>e.date!==date);
+        saveEvals(); closeDetailModal();
+        renderCalendar(currentYear, currentMonth); renderDayPanel();
+      }
+    }
+    function getDdayText(dateStr) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const target = new Date(dateStr);
+      const diff = Math.floor((target-today)/86400000);
+      if(diff===0) return 'D-DAY!';
+      else if(diff>0) return `D-${diff}`;
+      else return `지남 (${Math.abs(diff)}일 전)`;
+    }
+    function formatRange(rg) {
+      const m = rg.match(/^(\d{1,3})\s*~\s*(\d{1,3})$/);
+      if(m) return `${m[1]}p ~ ${m[2]}p`;
+      return rg;
+    }
+    function openSettingModal() {
+      document.getElementById('settingModalBg').style.display = '';
+      document.getElementById('darkModeSwitch').checked = document.body.classList.contains('dark');
+      document.getElementById('editTitleInput').value = getCustomTitle();
+      document.body.style.overflow = 'hidden';
+    }
+    function closeSettingModal() {
+      document.getElementById('settingModalBg').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+    document.getElementById('settingModalBg').onclick = function(e) {
+      if(e.target === this) closeSettingModal();
+    };
+    function toggleDarkMode(chk) {
+      if(chk.checked) {
+        document.body.classList.add('dark');
+        localStorage.setItem('darkmode','1');
+      } else {
+        document.body.classList.remove('dark');
+        localStorage.setItem('darkmode','0');
+      }
+    }
+    if(localStorage.getItem('darkmode')==='1') document.body.classList.add('dark');
+
+    updateMonthText(); renderCalendar(currentYear, currentMonth); renderDayPanel();
+  </script>
+</body>
+</html>
